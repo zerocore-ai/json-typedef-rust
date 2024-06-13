@@ -1,6 +1,9 @@
 use crate::SerdeSchema;
 use serde_json::Value;
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    hash::{Hash, Hasher},
+};
 use thiserror::Error;
 
 /// A convenience alias for the JSON Typedef `definitions` keyword value.
@@ -65,7 +68,7 @@ pub type Metadata = BTreeMap<String, Value>;
 ///     }
 /// );
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Schema {
     /// The [empty](https://tools.ietf.org/html/rfc8927#section-2.2.1) form.
     ///
@@ -211,7 +214,7 @@ pub enum Schema {
 }
 
 /// The values [`Schema::Type::type_`] may take on.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Type {
     /// Either JSON `true` or `false`.
     Boolean,
@@ -1161,6 +1164,113 @@ impl Schema {
             Self::Properties { nullable, .. } => *nullable,
             Self::Values { nullable, .. } => *nullable,
             Self::Discriminator { nullable, .. } => *nullable,
+        }
+    }
+}
+
+impl Hash for Schema {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        #[inline(always)]
+        fn hash_metadata<H: Hasher>(metadata: &BTreeMap<String, Value>, state: &mut H) {
+            metadata.iter().for_each(|(k, v)| {
+                k.hash(state);
+                v.to_string().hash(state); // TODO: Not optimal, but works for now. This works because `serde_json::Value` uses BTreeMap
+            });
+        }
+
+        match self {
+            Schema::Empty {
+                definitions,
+                metadata,
+            } => {
+                definitions.hash(state);
+                hash_metadata(metadata, state);
+            }
+            Schema::Ref {
+                definitions,
+                metadata,
+                nullable,
+                ref_,
+            } => {
+                definitions.hash(state);
+                hash_metadata(metadata, state);
+                nullable.hash(state);
+                ref_.hash(state);
+            }
+            Schema::Type {
+                definitions,
+                metadata,
+                nullable,
+                type_,
+            } => {
+                definitions.hash(state);
+                hash_metadata(metadata, state);
+                nullable.hash(state);
+                type_.hash(state);
+            }
+            Schema::Enum {
+                definitions,
+                metadata,
+                nullable,
+                enum_,
+            } => {
+                definitions.hash(state);
+                hash_metadata(metadata, state);
+                nullable.hash(state);
+                enum_.hash(state);
+            }
+            Schema::Elements {
+                definitions,
+                metadata,
+                nullable,
+                elements,
+            } => {
+                definitions.hash(state);
+                hash_metadata(metadata, state);
+                nullable.hash(state);
+                elements.hash(state);
+            }
+            Schema::Properties {
+                definitions,
+                metadata,
+                nullable,
+                properties,
+                optional_properties,
+                properties_is_present,
+                additional_properties,
+            } => {
+                definitions.hash(state);
+                hash_metadata(metadata, state);
+                nullable.hash(state);
+                properties.hash(state);
+                optional_properties.hash(state);
+                properties_is_present.hash(state);
+                additional_properties.hash(state);
+            }
+            Schema::Values {
+                definitions,
+                metadata,
+                nullable,
+                values,
+            } => {
+                definitions.hash(state);
+                hash_metadata(metadata, state);
+                nullable.hash(state);
+                values.hash(state);
+            }
+            Schema::Discriminator {
+                definitions,
+                metadata,
+                nullable,
+                discriminator,
+                mapping,
+            } => {
+                definitions.hash(state);
+                hash_metadata(metadata, state);
+                nullable.hash(state);
+                discriminator.hash(state);
+                mapping.hash(state);
+            }
         }
     }
 }

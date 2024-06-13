@@ -100,14 +100,14 @@ Here's an example of a JSON Type Definition schema:
 
 ```json
 {
-    "properties": {
-        "name": {
-            "type": "string"
-        },
-        "isAdmin": {
-            "type": "boolean"
-        }
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "isAdmin": {
+      "type": "boolean"
     }
+  }
 }
 ```
 
@@ -124,6 +124,18 @@ Install this crate by adding the following to your `Cargo.toml`:
 
 ```toml
 jtd = "0.3"
+```
+
+## Development
+
+Clone the repository and run `cargo build` to build the crate.
+
+```sh
+git clone --recursive https://github.com/jsontypedef/json-typedef-rust.git
+```
+
+```sh
+cargo build
 ```
 
 ## Usage
